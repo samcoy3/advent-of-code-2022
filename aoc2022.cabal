@@ -3,14 +3,12 @@ cabal-version: 1.12
 -- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: 74a518596623333f54debbd08849a3f5a987e3c7d13d8b337ef10b1fc25ba29c
 
-name:           aoc-template
+name:           aoc2022
 version:        2022.0
-description:    A template for Advent of Code projects in Haskell
-homepage:       https://github.com/samcoy3/advent-of-code-template#readme
-bug-reports:    https://github.com/samcoy3/advent-of-code-template/issues
+description:    My solutions to Advent of Code 2022, written in Haskell.
+homepage:       https://github.com/samcoy3/advent-of-code-2022#readme
+bug-reports:    https://github.com/samcoy3/advent-of-code-2022/issues
 author:         Sam Coy
 maintainer:     samcoy3@gmail.com
 copyright:      2022 Sam Coy
@@ -22,7 +20,7 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/samcoy3/advent-of-code-template
+  location: https://github.com/samcoy3/advent-of-code-2022
 
 library
   exposed-modules:
@@ -57,7 +55,7 @@ library
       Util.Parsers
       Util.Util
   other-modules:
-      Paths_aoc_template
+      Paths_aoc2022
   hs-source-dirs:
       src
   default-extensions:
@@ -85,7 +83,7 @@ library
 executable aoc-template-exe
   main-is: Main.hs
   other-modules:
-      Paths_aoc_template
+      Paths_aoc2022
   hs-source-dirs:
       app
   default-extensions:
@@ -99,7 +97,7 @@ executable aoc-template-exe
   ghc-options: -threaded -rtsopts -with-rtsopts=-N4 -with-rtsopts=-qa -with-rtsopts=-C0 -funfolding-use-threshold=16 -fexcess-precision -optc-O3 -optc-ffast-math -O2
   build-depends:
       ansi-terminal
-    , aoc-template
+    , aoc2022
     , attoparsec
     , base >=4.7 && <5
     , containers
