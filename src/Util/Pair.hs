@@ -15,3 +15,6 @@ instance (Monoid a) => Monoid (Pair a) where
 
 (<+>) :: Num a => Pair a -> Pair a -> Pair a
 x <+> y = (+) <$> x <*> y
+
+(<->) :: Num a => Pair a -> Pair a -> Pair a
+x <-> y = (-) <$> x <*> y
