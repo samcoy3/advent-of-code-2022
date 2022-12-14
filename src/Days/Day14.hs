@@ -14,6 +14,7 @@ import qualified Util.Util as U
 import qualified Program.RunDay as R (runDay, Day)
 import Data.Attoparsec.Text
 import Data.Void
+import Util.Parsers (around)
 {- ORMOLU_ENABLE -}
 
 runDay :: R.Day
@@ -21,10 +22,24 @@ runDay = R.runDay inputParser partA partB
 
 ------------ PARSER ------------
 inputParser :: Parser Input
-inputParser = error "Not implemented yet!"
+inputParser = Map.fromList . fmap (,Rock) <$> rockPositions
+  where
+    rockPositions = concatMap processSegments <$> segments `sepBy` endOfLine
+    processSegments segments =
+      concat $
+        zipWith
+          ( \(x1, y1) (x2, y2) ->
+              [(x, y) | x <- x1 `U.to` x2, y <- y1 `U.to` y2]
+          )
+          segments
+          (tail segments)
+    segments = decimal `around` char ',' `sepBy` string " -> "
 
 ------------ TYPES ------------
-type Input = Void
+data Object = Rock | Sand
+  deriving (Show, Eq)
+
+type Input = Map (Int, Int) Object
 
 type OutputA = Void
 
