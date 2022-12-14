@@ -51,37 +51,41 @@ type OutputA = Int
 type OutputB = Int
 
 ------------ PART A ------------
-addSand :: Part -> CaveSystem -> Maybe (Int, Int)
-addSand part caves =
-  let (_, _, _, yMax) = U.mapBoundingBox $ Map.filter (== Rock) caves
-      addSand' (x, y) =
+addSand :: Int -> Part -> CaveSystem -> [(Int, Int)] -> Maybe [(Int, Int)]
+addSand yMax part caves stack =
+  let addSand' [] = Nothing
+      addSand' stack@((x, y) : _) =
         if
             | y == yMax && part == PartA -> Nothing
-            | y == yMax + 1 && part == PartB -> Just (x, y)
-            | (x, y + 1) `Map.notMember` caves -> addSand' (x, y + 1)
-            | (x - 1, y + 1) `Map.notMember` caves -> addSand' (x - 1, y + 1)
-            | (x + 1, y + 1) `Map.notMember` caves -> addSand' (x + 1, y + 1)
-            | otherwise -> Just (x, y)
-   in addSand' (500, 0)
+            | y == yMax + 1 && part == PartB -> Just stack
+            | (x, y + 1) `Map.notMember` caves -> addSand' $ (x, y + 1) : stack
+            | (x - 1, y + 1) `Map.notMember` caves -> addSand' $ (x - 1, y + 1) : stack
+            | (x + 1, y + 1) `Map.notMember` caves -> addSand' $ (x + 1, y + 1) : stack
+            | otherwise -> Just stack
+   in addSand' stack
 
 addSandUntilFallsOff :: CaveSystem -> [(Int, Int)]
-addSandUntilFallsOff =
-  unfoldr
-    ( \c -> case addSand PartA c of
-        Just sandPos -> Just (sandPos, Map.insert sandPos Sand c)
-        Nothing -> Nothing
-    )
+addSandUntilFallsOff caves =
+  let (_, _, _, yMax) = U.mapBoundingBox caves
+   in unfoldr
+        ( \c -> case uncurry (addSand yMax PartA) c of
+            Just stack -> Just (head stack, (Map.insert (head stack) Sand (fst c), tail stack))
+            Nothing -> Nothing
+        )
+        (caves, [(500, 0)])
 
 partA :: Input -> OutputA
 partA = length . addSandUntilFallsOff
 
 ------------ PART B ------------
 addSandUntilBlocksSource :: CaveSystem -> Int
-addSandUntilBlocksSource =
-  fromJust
-    . elemIndex (500, 0)
-    . unfoldr
-      (\c -> addSand PartB c >>= (\pos -> Just (pos, Map.insert pos Sand c)))
+addSandUntilBlocksSource caves =
+  let (_, _, _, yMax) = U.mapBoundingBox caves
+   in fromJust
+        . elemIndex (500, 0)
+        . unfoldr
+          (\c -> uncurry (addSand yMax PartB) c >>= (\stack -> Just (head stack, (Map.insert (head stack) Sand (fst c), tail stack))))
+        $ (caves, [(500, 0)])
 
 partB :: Input -> Int
 partB = (+ 1) . addSandUntilBlocksSource
