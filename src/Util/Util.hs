@@ -45,10 +45,10 @@ chunksByPredicate :: (a -> Bool) -> [a] -> [[a]]
 chunksByPredicate p ls
   | null ls = []
   | otherwise =
-    let (prefix, rest) = span p ls
-     in if null prefix
-          then (chunksByPredicate p $ dropWhile (not . p) rest)
-          else prefix : (chunksByPredicate p $ dropWhile (not . p) rest)
+      let (prefix, rest) = span p ls
+       in if null prefix
+            then (chunksByPredicate p $ dropWhile (not . p) rest)
+            else prefix : (chunksByPredicate p $ dropWhile (not . p) rest)
 
 -- Allows the user to log out some context and then the result of some expression
 -- For example, supposing a is 2, and b is 5:
@@ -73,3 +73,9 @@ mapBoundingBox m =
     (maximum . fmap fst . Map.keys $ m)
     (minimum . fmap snd . Map.keys $ m)
     (maximum . fmap snd . Map.keys $ m)
+
+-- Given two ints, return a list of ints "going" from the first to the second
+-- Solves the problem of list comprehensions not going downwards unless explicit
+-- e.g. [5..1] == [], but 5 `to` 1 == [5,4,3,2,1]
+to :: Int -> Int -> [Int]
+to a b = if a <= b then [a .. b] else [a, a - 1 .. b]
