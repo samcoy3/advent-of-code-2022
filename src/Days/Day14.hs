@@ -39,16 +39,49 @@ inputParser = Map.fromList . fmap (,Rock) <$> rockPositions
 data Object = Rock | Sand
   deriving (Show, Eq)
 
-type Input = Map (Int, Int) Object
+type CaveSystem = Map (Int, Int) Object
 
-type OutputA = Void
+data Part = PartA | PartB
+  deriving (Eq)
 
-type OutputB = Void
+type Input = CaveSystem
+
+type OutputA = Int
+
+type OutputB = Int
 
 ------------ PART A ------------
+addSand :: Part -> CaveSystem -> Maybe (Int, Int)
+addSand part caves =
+  let (_, _, _, yMax) = U.mapBoundingBox $ Map.filter (== Rock) caves
+      addSand' (x, y) =
+        if
+            | y == yMax && part == PartA -> Nothing
+            | y == yMax + 1 && part == PartB -> Just (x, y)
+            | (x, y + 1) `Map.notMember` caves -> addSand' (x, y + 1)
+            | (x - 1, y + 1) `Map.notMember` caves -> addSand' (x - 1, y + 1)
+            | (x + 1, y + 1) `Map.notMember` caves -> addSand' (x + 1, y + 1)
+            | otherwise -> Just (x, y)
+   in addSand' (500, 0)
+
+addSandUntilFallsOff :: CaveSystem -> [(Int, Int)]
+addSandUntilFallsOff =
+  unfoldr
+    ( \c -> case addSand PartA c of
+        Just sandPos -> Just (sandPos, Map.insert sandPos Sand c)
+        Nothing -> Nothing
+    )
+
 partA :: Input -> OutputA
-partA = error "Not implemented yet!"
+partA = length . addSandUntilFallsOff
 
 ------------ PART B ------------
-partB :: Input -> OutputB
-partB = error "Not implemented yet!"
+addSandUntilBlocksSource :: CaveSystem -> Int
+addSandUntilBlocksSource =
+  fromJust
+    . elemIndex (500, 0)
+    . unfoldr
+      (\c -> addSand PartB c >>= (\pos -> Just (pos, Map.insert pos Sand c)))
+
+partB :: Input -> Int
+partB = (+ 1) . addSandUntilBlocksSource
