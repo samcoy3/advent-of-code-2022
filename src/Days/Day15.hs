@@ -24,7 +24,8 @@ runDay = R.runDay inputParser partA partB
 ------------ TYPES ------------
 data SensorInfo = SensorInfo
   { sensor :: Pair Int,
-    nearestBeacon :: Pair Int
+    nearestBeacon :: Pair Int,
+    distanceFromBeacon :: Int
   }
   deriving (Show)
 
@@ -36,7 +37,7 @@ type OutputB = Int
 
 ------------ PARSER ------------
 inputParser :: Parser Input
-inputParser = sensorInfo `sepBy` endOfLine
+inputParser = sortOn (fst . getPair . sensor) <$> sensorInfo `sepBy` endOfLine
   where
     point = do
       "x="
@@ -49,7 +50,7 @@ inputParser = sensorInfo `sepBy` endOfLine
       sensor <- point
       ": closest beacon is at "
       nearestBeacon <- point
-      return SensorInfo {..}
+      return SensorInfo {distanceFromBeacon = distance sensor nearestBeacon, ..}
 
 ------------ PART A ------------
 distance :: Pair Int -> Pair Int -> Int
@@ -57,8 +58,7 @@ distance a b = sum . fmap abs $ (-) <$> a <*> b
 
 getExclusionZoneAtYCoord :: Int -> SensorInfo -> Maybe (Int, Int)
 getExclusionZoneAtYCoord y SensorInfo {..} =
-  let distanceFromBeacon = distance sensor nearestBeacon
-      distanceFromYCoord = abs $ y - (snd . getPair $ sensor)
+  let distanceFromYCoord = abs $ y - (snd . getPair $ sensor)
       sensorX = fst . getPair $ sensor
    in if distanceFromYCoord > distanceFromBeacon
         then Nothing
@@ -69,7 +69,7 @@ getExclusionZoneAtYCoord y SensorInfo {..} =
             )
 
 combineIntervals :: [(Int, Int)] -> [(Int, Int)]
-combineIntervals = foldl' combineIntervals' []
+combineIntervals = foldl' combineIntervals' [] . sortOn fst
   where
     combineIntervals' [] interval = [interval]
     combineIntervals' intervals@((b, e) : _) (b', e') =
@@ -83,7 +83,6 @@ partA sensorInfos =
     . sum
     . fmap (\(a, b) -> b - a + 1)
     . combineIntervals
-    . sortBy (comparing fst)
     . mapMaybe (getExclusionZoneAtYCoord yCoord)
     $ sensorInfos
   where
@@ -91,11 +90,12 @@ partA sensorInfos =
     numberOfBeaconsInZone = length . filter ((== yCoord) . snd) . nub . fmap (getPair . nearestBeacon) $ sensorInfos
 
 ------------ PART B ------------
-partB :: Input -> ([(Int, Int)], Int)
+partB :: Input -> Int
 partB sensorInfos =
-  head
+  (\((x, _) : _, y) -> ((x - 1) * 4_000_000) + y)
+    . head
     . filter ((/= 1) . length . fst)
     $ getIntervalsAtCoord
       <$> [0 .. 4_000_000]
   where
-    getIntervalsAtCoord y = (,y) . combineIntervals . sortBy (comparing fst) . mapMaybe (getExclusionZoneAtYCoord y) $ sensorInfos
+    getIntervalsAtCoord y = (,y) . combineIntervals . mapMaybe (getExclusionZoneAtYCoord y) $ sensorInfos
