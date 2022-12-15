@@ -32,7 +32,7 @@ type Input = [SensorInfo]
 
 type OutputA = Int
 
-type OutputB = Void
+type OutputB = Int
 
 ------------ PARSER ------------
 inputParser :: Parser Input
@@ -68,24 +68,34 @@ getExclusionZoneAtYCoord y SensorInfo {..} =
               sensorX + (distanceFromBeacon - distanceFromYCoord)
             )
 
-partA :: Input -> Int
+combineIntervals :: [(Int, Int)] -> [(Int, Int)]
+combineIntervals = foldl' combineIntervals' []
+  where
+    combineIntervals' [] interval = [interval]
+    combineIntervals' intervals@((b, e) : _) (b', e') =
+      if b' <= e
+        then (b, max e e') : tail intervals
+        else (b', e') : intervals
+
+partA :: Input -> OutputA
 partA sensorInfos =
   (+ (-numberOfBeaconsInZone))
     . sum
     . fmap (\(a, b) -> b - a + 1)
-    . foldl' combineIntervals []
+    . combineIntervals
     . sortBy (comparing fst)
     . mapMaybe (getExclusionZoneAtYCoord yCoord)
     $ sensorInfos
   where
     yCoord = 2_000_000
     numberOfBeaconsInZone = length . filter ((== yCoord) . snd) . nub . fmap (getPair . nearestBeacon) $ sensorInfos
-    combineIntervals [] interval = [interval]
-    combineIntervals intervals@((b, e) : _) (b', e') =
-      if b' <= e
-        then (b, max e e') : tail intervals
-        else (b', e') : intervals
 
 ------------ PART B ------------
-partB :: Input -> OutputB
-partB = error "Not implemented yet!"
+partB :: Input -> ([(Int, Int)], Int)
+partB sensorInfos =
+  head
+    . filter ((/= 1) . length . fst)
+    $ getIntervalsAtCoord
+      <$> [0 .. 4_000_000]
+  where
+    getIntervalsAtCoord y = (,y) . combineIntervals . sortBy (comparing fst) . mapMaybe (getExclusionZoneAtYCoord y) $ sensorInfos
