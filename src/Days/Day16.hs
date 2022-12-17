@@ -15,6 +15,7 @@ import qualified Program.RunDay as R (runDay, Day)
 import Data.Attoparsec.Text
 import Data.Void
 import Control.Applicative ((<|>))
+import qualified Data.Ord as Map
 {- ORMOLU_ENABLE -}
 
 runDay :: R.Day
@@ -47,7 +48,7 @@ type Input = Valves
 
 type OutputA = Int
 
-type OutputB = Void
+type OutputB = Int
 
 ------------ PART A ------------
 bfs :: Valves -> ValveName -> Set (ValveName, Int)
@@ -67,23 +68,38 @@ computeDistances valves =
    in Map.fromList $
         (\k -> (k, Set.filter ((/= 0) . flow . (valves Map.!) . fst) $ bfs valves k)) <$> importantValves
 
-findBestSequence :: ValveName -> Valves -> Int
-findBestSequence start valves = findBestSequence' (Set.singleton start) start valves (computeDistances valves) 30
-  where
-    findBestSequence' openValves currentValve valves distances remainingMinutes =
-      if remainingMinutes <= 0
-        then 0
-        else
-          let possibleNextMoves =
-                Set.filter ((`Set.notMember` openValves) . fst) $
-                  distances Map.! currentValve
-              accruedFlow = remainingMinutes * flow (valves Map.! currentValve)
-           in (+ accruedFlow) . maximum $
-                Set.map (\(next, dist) -> findBestSequence' (Set.insert next openValves) next valves distances (remainingMinutes - (dist + 1))) possibleNextMoves
+getAllPossibleRoutes :: Int -> ValveName -> Valves -> Map (Set ValveName) Int
+getAllPossibleRoutes startingMinutes start valves = getAllPossibleRoutes' (Set.singleton start) start valves (computeDistances valves) startingMinutes
+
+getAllPossibleRoutes' ::
+  Set ValveName ->
+  ValveName ->
+  Valves ->
+  ValveDistances ->
+  Int ->
+  Map (Set ValveName) Int
+getAllPossibleRoutes' openValves currentValve valves distances remainingMinutes =
+  if remainingMinutes <= 0
+    then Map.empty
+    else
+      let possibleNextMoves =
+            Set.filter ((`Set.notMember` openValves) . fst) $
+              distances Map.! currentValve
+          accruedFlow = remainingMinutes * flow (valves Map.! currentValve)
+       in Map.map (+ accruedFlow)
+            . Map.insert (Set.singleton currentValve) 0
+            . Map.mapKeys (Set.insert currentValve)
+            . foldr (Map.unionWith max) Map.empty
+            $ Set.map (\(next, dist) -> getAllPossibleRoutes' (Set.insert next openValves) next valves distances (remainingMinutes - (dist + 1))) possibleNextMoves
 
 partA :: Input -> OutputA
-partA = findBestSequence "AA"
+partA = maximum . Map.elems . getAllPossibleRoutes 30 "AA"
 
 ------------ PART B ------------
 partB :: Input -> OutputB
-partB = error "Not implemented yet!"
+partB valves = maximum $ withBestElephantRoute <$> Map.toList (getAllPossibleRoutes 26 "AA" valves)
+  where
+    distances = computeDistances valves
+    withBestElephantRoute (usedValves, flowReleased) =
+      (+ flowReleased) . maximum . Map.elems $
+        getAllPossibleRoutes' usedValves "AA" valves distances 26
